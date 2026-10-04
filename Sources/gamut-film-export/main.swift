@@ -4,8 +4,9 @@
 //
 //   gamut-film-export <output-dir> [width height]
 //
-// Grain, halation and the other spatial effects are left in the pack as the stock defines them;
-// Gamut uses only the per-pixel tables and supplies its own grain.
+// Grain, halation and the other spatial effects are left in the pack as the stock defines them,
+// and their settings are also written at a ladder of widths (`<name>.w<width>.cfg`) for Gamut's
+// own grain and halation, which render at every size.
 import Foundation
 import FotufilmCore
 
@@ -68,6 +69,20 @@ for job in jobs {
             let json = try JSONSerialization.data(withJSONObject: meter, options: [.sortedKeys])
             try json.write(to: output.appendingPathComponent("\(job.name).meter.json"))
             meterWritten = true
+        }
+        // GRAIN AT EVERY SIZE (Gamut, 4 October): the grain and halation settings are worked
+        // out for the width a pack is prepared at (clumps per pixel, clump sigma, amplitude
+        // through the 48 µm aperture, halation radii — all from the pixel pitch on the frame).
+        // Gamut renders at many sizes, so the configuration alone (header included, no tables)
+        // is written at a ladder of widths: `<name>.w<width>.cfg`, 3:2.
+        for ladderWidth in [500, 1000, 2000, 4000, 8000] {
+            let ladderPack = try WebFilmProfile.prepare(stock: stock, options: options,
+                                                        width: ladderWidth, height: ladderWidth * 2 / 3)
+            // FSWP v2: "FSWP", then nine Int32s (the configuration's count at byte 24), then it.
+            let count = ladderPack.subdata(in: 24..<28).withUnsafeBytes { $0.loadUnaligned(as: Int32.self) }
+            let end = min(ladderPack.count, 40 + Int(Int32(littleEndian: count)) * 4)
+            try ladderPack.subdata(in: 0..<end)
+                .write(to: output.appendingPathComponent("\(job.name).w\(ladderWidth).cfg"))
         }
         manifest.append(["name": job.name, "stock": job.stock, "push": job.push,
                          "exposureEV": job.exposureEV, "width": width, "height": height,
