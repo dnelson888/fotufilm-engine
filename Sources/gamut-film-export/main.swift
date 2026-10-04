@@ -43,9 +43,35 @@ for job in jobs {
     do {
         let pack = try WebFilmProfile.prepare(stock: stock, options: options, width: width, height: height)
         try pack.write(to: output.appendingPathComponent("\(job.name).fswp"))
+        // AUTO LEVELS (Gamut, 4 October): the per-photograph receiver levels the web editor's
+        // "Screen · Auto Levels" applies (web/src/screen-conversion.js, `applyScreenLevels`),
+        // tabulated exactly as WebStockCatalogue tabulates them for the browser: each sample the
+        // scale and shift against the levels the pack was prepared with, over the scene's metered
+        // highlight from -12 to 12 stops; `reads` for the films whose records Auto Levels
+        // balances; `placesFilm` for the ones it gives film exposure and tone.
+        var meterWritten = false
+        if !stock.isReflectionPrint {
+            let style = DigitalReferenceStyle.autoLevels
+            let fixed = style.receiverLevels(for: stock)
+            let stops = (0...512).map { -12 + Float($0) * 24 / 512 }
+            var meter: [String: Any] = [
+                "min": -12.0, "max": 12.0,
+                "adjustments": stops.map { s -> [Float] in
+                    let levels = style.receiverLevels(for: stock, sceneHighlightStops: s)
+                    return [levels.scale / fixed.scale, levels.shift - fixed.shift]
+                },
+            ]
+            if !stock.isReversal { meter["placesFilm"] = true }
+            if DigitalReferenceStyle.autoLevelsColourRead(for: stock, stops: 0) != nil {
+                meter["reads"] = stops.map { DigitalReferenceStyle.autoLevelsColourRead(for: stock, stops: $0)! }
+            }
+            let json = try JSONSerialization.data(withJSONObject: meter, options: [.sortedKeys])
+            try json.write(to: output.appendingPathComponent("\(job.name).meter.json"))
+            meterWritten = true
+        }
         manifest.append(["name": job.name, "stock": job.stock, "push": job.push,
                          "exposureEV": job.exposureEV, "width": width, "height": height,
-                         "bytes": pack.count])
+                         "bytes": pack.count, "meter": meterWritten])
         print("Wrote \(job.name): \(pack.count) bytes")
     } catch {
         print("FAILED \(job.name): \(error)")
