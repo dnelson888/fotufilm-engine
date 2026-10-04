@@ -90,6 +90,7 @@ let package = Package(
         .executable(name: "fotufilm", targets: ["fotufilm"]),
         .executable(name: "fotufilm-controls", targets: ["fotufilm-controls"]),
         .executable(name: "fotufilm-web-profile", targets: ["fotufilm-web-profile"]),
+        .executable(name: "gamut-film-export", targets: ["gamut-film-export"]),
         .executable(name: "fotufilm-parity", targets: ["fotufilm-parity"]),
     ] + benchmarkProducts,
     targets: [
@@ -154,6 +155,7 @@ let package = Package(
                           dependencies: ["FotufilmCore", "FotufilmImaging", "FotufilmEditModel"]),
         .executableTarget(name: "fotufilm-controls", dependencies: ["FotufilmEditModel"]),
         .executableTarget(name: "fotufilm-web-profile", dependencies: ["FotufilmEditModel"]),
+        .executableTarget(name: "gamut-film-export", dependencies: ["FotufilmCore"]),
         // Develops one scene on the CPU and the GPU (Metal, CUDA or Vulkan) for cross-machine parity.
         .executableTarget(name: "fotufilm-parity",
                           dependencies: ["FotufilmCore", "FotufilmHalide",
