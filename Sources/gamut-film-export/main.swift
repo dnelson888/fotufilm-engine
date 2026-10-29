@@ -20,13 +20,18 @@ struct Job { let name: String; let stock: String; let push: Float; let exposureE
 
 // The films Gamut's film looks are built on, at box speed, plus their variants.
 let films = ["portra400", "gold200", "ultramax400", "pro400h", "ektar100", "cinestill800t",
-             "provia100f", "kodachrome64", "trix400", "hp5plus400"]
+             "provia100f", "kodachrome64", "trix400", "hp5plus400",
+             // 29 October 2026 (Derek): a Fuji negative, a Harman black and white, a Fuji black and white.
+             "superia400", "phoenix200", "acros100"]
 var jobs = films.map { Job(name: $0, stock: $0, push: 0, exposureEV: 0) }
 jobs += [
     Job(name: "portra400-over1", stock: "portra400", push: 0, exposureEV: 1),
     Job(name: "cinestill800t-push1", stock: "cinestill800t", push: 1, exposureEV: -1),
     Job(name: "cinestill800t-push2", stock: "cinestill800t", push: 2, exposureEV: -2),
     Job(name: "ektar100-push2", stock: "ektar100", push: 2, exposureEV: -2),
+    // 29 October 2026: Tri-X at 1600, and Portra at 800, each pushed in development.
+    Job(name: "trix400-push2", stock: "trix400", push: 2, exposureEV: -2),
+    Job(name: "portra400-push1", stock: "portra400", push: 1, exposureEV: -1),
 ]
 
 print("Stocks available: \(FilmStock.allPresetIDs.joined(separator: ", "))")
